@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaussian Splat Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #777777;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .product-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+            overflow: hidden;
+            width: 90vw;
+            max-width: 600px;
+        }
+        .viewer-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #e8e8e8;
+            cursor: grab;
+            overflow: hidden;
+        }
+        .viewer-container:active { cursor: grabbing; }
+        .viewer-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+            opacity: 0;
+            transition: opacity 1.2s ease-in;
+        }
+        .viewer-container canvas.visible {
+            opacity: 1;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            color: #999;
+            font-size: 14px;
+        }
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #ddd;
+            border-top-color: #888;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .viewer-hint {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+            z-index: 10;
+        }
+        .viewer-hint.visible {
+            opacity: 1;
+        }
+        .btn-fullscreen {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 36px;
+            height: 36px;
+            background: rgba(0,0,0,0.4);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            opacity: 0;
+            transition: opacity 0.5s, background 0.2s;
+        }
+        .btn-fullscreen.visible { opacity: 1; }
+        .btn-fullscreen:hover { background: rgba(0,0,0,0.6); }
+        .btn-fullscreen svg { width: 18px; height: 18px; fill: #fff; }
+        .product-info {
+            padding: 24px;
+        }
+        .product-info h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        .product-info .subtitle {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 16px;
+        }
+        .product-info .tag {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #555;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-right: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="product-card">
+        <div class="viewer-container" id="viewer-container">
+            <div id="loading">
+                <div class="spinner"></div>
+                Wczytywanie modelu...
+            </div>
+            <div class="viewer-hint" id="hint">Przeciągnij aby obrócić</div>
+            <button class="btn-fullscreen" id="btn-fullscreen" title="Pełny ekran">
+                <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            </button>
+        </div>
+        <div class="product-info">
+            <h1>Model 3D — Gaussian Splat</h1>
+            <p class="subtitle">Skan 3D w technologii Gaussian Splatting</p>
+            <span class="tag">3D Scan</span>
+            <span class="tag">Gaussian Splat</span>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/",
+            "@mkkellogg/gaussian-splats-3d": "https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.4/build/gaussian-splats-3d.module.min.js"
+        }
+    }
+    </script>
+    <script type="module">
+        import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
+
+        const container = document.getElementById('viewer-container');
+
+        const viewer = new GaussianSplats3D.Viewer({
+            cameraUp: [0, -1, 0],
+            initialCameraPosition: [0, -1, -3],
+            initialCameraLookAt: [0, 0, 0],
+            rootElement: container,
+            sceneRevealMode: GaussianSplats3D.SceneRevealMode.Instant,
+            sharedMemoryForWorkers: false,
+        });
+
+        viewer.addSplatScene('./gs_Antek_obrobiony.splat', {
+            showLoadingUI: false,
+        })
+        .then(() => {
+            document.getElementById('loading').style.display = 'none';
+
+            // Fade in canvas
+            const canvas = container.querySelector('canvas');
+            if (canvas) {
+                requestAnimationFrame(() => canvas.classList.add('visible'));
+            }
+
+            const controls = viewer.controls;
+            if (controls) {
+                controls.enablePan = false;
+                controls.minPolarAngle = Math.PI * 0.1;
+                controls.maxPolarAngle = Math.PI * 0.9;
+                controls.minDistance = 1;
+                controls.maxDistance = 8;
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.08;
+
+                // Autorotation
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = 1.5;
+            }
+
+            viewer.start();
+
+            // Show hint and fullscreen button after fade-in
+            setTimeout(() => {
+                document.getElementById('hint').classList.add('visible');
+                document.getElementById('btn-fullscreen').classList.add('visible');
+            }, 1500);
+
+            // Stop autorotation + hide hint on interaction
+            container.addEventListener('pointerdown', () => {
+                if (controls) controls.autoRotate = false;
+                document.getElementById('hint').classList.remove('visible');
+            }, { once: true });
+        })
+        .catch(err => {
+            document.getElementById('loading').textContent = 'Błąd: ' + err.message;
+            console.error(err);
+        });
+
+        // Fullscreen
+        document.getElementById('btn-fullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                container.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
