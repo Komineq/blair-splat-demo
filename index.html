@@ -1,35 +1,101 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaussian Splat Viewer</title>
+    <title>BLÁIRE</title>
+    <link rel="stylesheet" href="https://use.typekit.net/uvy8avf.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #777777;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #E4E4E4;
+            font-family: "bookman-jf-pro", Georgia, serif;
+            color: #000;
+            font-size: 14px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        a { color: inherit; text-decoration: none; }
+        button { font-family: inherit; }
+
+        /* NAV */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 16px 64px;
+            background: #E4E4E4;
+        }
+        .nav-left, .nav-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        .nav-right { justify-content: flex-end; }
+        .nav-left { gap: 8px; }
+        .nav-btn {
+            background: none;
+            border: 1px solid transparent;
+            color: #000;
+            font-size: 13px;
+            padding: 6px 16px;
+            cursor: pointer;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            transition: border-color 0.3s;
+        }
+        .nav-btn:hover { border-color: #000; }
+        .nav-logo-wrap {
+            display: flex;
+            justify-content: center;
+        }
+        .nav-logo-wrap img {
+            height: 80px;
+            width: auto;
+            max-width: 256px;
+            object-fit: contain;
+        }
+
+        /* PRODUCT */
+        .product-wrap {
+            flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            width: 100%;
+            padding: 0 32px;
         }
-        .product-card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
-            overflow: hidden;
-            width: 90vw;
-            max-width: 600px;
+        .product {
+            max-width: 1280px;
+            width: 100%;
+            display: flex;
+            gap: 32px;
+            align-items: flex-start;
+        }
+
+        /* LEFT: VIEWER */
+        .product-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
         .viewer-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 1 / 1;
-            background: #e8e8e8;
-            cursor: grab;
+            aspect-ratio: 4 / 5;
+            border: 1px solid #E4E4E4;
             overflow: hidden;
+            cursor: grab;
+            transition: border-color 0.3s;
+            background: #E4E4E4;
         }
+        .viewer-container:hover { border-color: #CECECE; }
         .viewer-container:active { cursor: grabbing; }
         .viewer-container canvas {
             width: 100% !important;
@@ -38,9 +104,7 @@
             opacity: 0;
             transition: opacity 1.2s ease-in;
         }
-        .viewer-container canvas.visible {
-            opacity: 1;
-        }
+        .viewer-container canvas.visible { opacity: 1; }
         #loading {
             position: absolute;
             top: 50%;
@@ -50,104 +114,287 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
-            color: #999;
-            font-size: 14px;
+            gap: 10px;
+            color: #A9A9A9;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
         .spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid #ddd;
-            border-top-color: #888;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #D0D0D0;
+            border-top-color: #999;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .viewer-hint {
             position: absolute;
-            bottom: 12px;
+            bottom: 14px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0,0,0,0.5);
             color: #fff;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 5px 14px;
+            font-size: 11px;
+            letter-spacing: 0.5px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.5s;
             z-index: 10;
         }
-        .viewer-hint.visible {
-            opacity: 1;
+        .viewer-hint.visible { opacity: 1; }
+        .badge-3d {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: #000;
+            color: #fff;
+            padding: 4px 10px;
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            z-index: 10;
         }
         .btn-fullscreen {
             position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 36px;
-            height: 36px;
-            background: rgba(0,0,0,0.4);
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            background: rgba(0,0,0,0.3);
             border: none;
-            border-radius: 8px;
             cursor: pointer;
             z-index: 10;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
             opacity: 0;
             transition: opacity 0.5s, background 0.2s;
         }
         .btn-fullscreen.visible { opacity: 1; }
-        .btn-fullscreen:hover { background: rgba(0,0,0,0.6); }
-        .btn-fullscreen svg { width: 18px; height: 18px; fill: #fff; }
-        .product-info {
-            padding: 24px;
+        .btn-fullscreen:hover { background: rgba(0,0,0,0.5); }
+        .btn-fullscreen svg { width: 16px; height: 16px; fill: #fff; }
+
+        /* RIGHT: INFO */
+        .product-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0 16px;
         }
-        .product-info h1 {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 8px;
+        .product-right h1 {
+            font-size: 18px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
         }
-        .product-info .subtitle {
-            font-size: 14px;
-            color: #888;
-            margin-bottom: 16px;
+        .price {
+            font-size: 18px;
+            margin-top: 16px;
         }
-        .product-info .tag {
-            display: inline-block;
-            background: #f0f0f0;
-            color: #555;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-right: 6px;
+        .size-label {
+            color: #A9A9A9;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+        .sizes {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .sizes label {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .sizes input { display: none; }
+        .sizes span {
+            min-width: 40px;
+            padding: 8px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #E4E4E4;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        .sizes span:hover { border-color: #CECECE; }
+        .sizes input:checked + span {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+        .sizes input:disabled + span {
+            color: #A9A9A9;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .btn-cart {
+            margin-top: 16px;
+            background: #000;
+            color: #fff;
+            border: 1px solid #000;
+            padding: 12px 32px;
+            font-size: 13px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: auto;
+            align-self: flex-start;
+        }
+        .btn-cart:hover {
+            background: #E4E4E4;
+            color: #000;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-top: 32px;
+        }
+        .tabs button {
+            background: none;
+            border: 1px solid transparent;
+            padding: 6px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .tabs button.active { border-color: #000; }
+        .tabs button:hover { border-color: #000; }
+        .tab-content {
+            margin-top: 16px;
+            font-size: 13px;
+            line-height: 1.8;
+            color: #000;
+        }
+        .tab-content.hidden { display: none; }
+        .tab-content p { margin-bottom: 12px; }
+        .tab-content ul {
+            list-style: disc;
+            padding-left: 18px;
+            line-height: 2;
+        }
+        .size-table {
+            border-collapse: collapse;
+        }
+        .size-table td {
+            border: 1px solid #000;
+            padding: 4px 8px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        /* FOOTER */
+        footer {
+            text-align: center;
+            padding: 32px;
+            font-size: 11px;
+            color: #A9A9A9;
+            letter-spacing: 1px;
+            margin-top: 40px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            nav { padding: 14px 20px; }
+            .nav-logo-wrap img { height: 48px; }
+            .product-wrap { padding: 0 16px; }
+            .product {
+                flex-direction: column;
+                gap: 24px;
+            }
+            .product-left, .product-right { width: 100%; }
+            .btn-cart { width: 100%; text-align: center; }
+            .nav-left .nav-btn span { display: none; }
         }
     </style>
 </head>
 <body>
-    <div class="product-card">
-        <div class="viewer-container" id="viewer-container">
-            <div id="loading">
-                <div class="spinner"></div>
-                Wczytywanie modelu...
-            </div>
-            <div class="viewer-hint" id="hint">Przeciągnij aby obrócić</div>
-            <button class="btn-fullscreen" id="btn-fullscreen" title="Pełny ekran">
-                <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-            </button>
+    <nav>
+        <div class="nav-left">
+            <button class="nav-btn">Shop</button>
+            <button class="nav-btn">About us</button>
+            <button class="nav-btn">Info</button>
         </div>
-        <div class="product-info">
-            <h1>Model 3D — Gaussian Splat</h1>
-            <p class="subtitle">Skan 3D w technologii Gaussian Splatting</p>
-            <span class="tag">3D Scan</span>
-            <span class="tag">Gaussian Splat</span>
+        <div class="nav-logo-wrap">
+            <a href="#">
+                <img src="./logo.webp" alt="BLÁIRE">
+            </a>
+        </div>
+        <div class="nav-right">
+            <button class="nav-btn">Basket (0)</button>
+        </div>
+    </nav>
+
+    <div class="product-wrap">
+        <div class="product">
+            <div class="product-left">
+                <div class="viewer-container" id="viewer-container">
+                    <div id="loading">
+                        <div class="spinner"></div>
+                        Loading 3D model...
+                    </div>
+                    <div class="viewer-hint" id="hint">Drag to rotate</div>
+                    <div class="badge-3d">3D View</div>
+                    <button class="btn-fullscreen" id="btn-fullscreen" title="Fullscreen">
+                        <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="product-right">
+                <h1>PREZENTACJA PRODUKTU — 3D MOCKUP</h1>
+                <div class="price">239,00 zl <span style="color:#A9A9A9; font-size:12px; margin-left:4px">(demo)</span></div>
+
+                <div class="size-label">select size</div>
+                <div class="sizes">
+                    <label><input type="radio" name="size" value="xs"><span>xs</span></label>
+                    <label><input type="radio" name="size" value="s"><span>s</span></label>
+                    <label><input type="radio" name="size" value="m" disabled><span>m</span></label>
+                    <label><input type="radio" name="size" value="l"><span>l</span></label>
+                    <label><input type="radio" name="size" value="xl"><span>xl</span></label>
+                </div>
+
+                <button class="btn-cart">add to cart</button>
+
+                <div class="tabs">
+                    <button class="active" data-tab="description">product description</button>
+                    <button data-tab="sizechart">size chart</button>
+                </div>
+
+                <div class="tab-content" id="tab-description">
+                    <p><strong>TO JEST MOCKUP / DEMO</strong></p>
+                    <p>Ta strona pokazuje jak interaktywny widok 3D może zostać zintegrowany ze stroną produktową. Model 3D po lewej zastępuje tradycyjne zdjęcia produktowe, pozwalając klientom obejrzeć produkt z każdej strony.</p>
+                    <p>Bez wtyczek i instalacji — działa w przeglądarce na komputerze i telefonie.</p>
+                    <ul>
+                        <li>Material: demo</li>
+                        <li>Care instructions: demo</li>
+                        <li>Designer color name: demo</li>
+                    </ul>
+                </div>
+
+                <div class="tab-content hidden" id="tab-sizechart">
+                    <table class="size-table">
+                        <tr>
+                            <td></td><td>XS</td><td>S</td><td>M</td><td>L</td><td>XL</td>
+                        </tr>
+                        <tr>
+                            <td>LENGTH</td><td></td><td>59 cm</td><td>61 cm</td><td>63 cm</td><td>65 cm</td>
+                        </tr>
+                        <tr>
+                            <td>WIDTH (CHEST)</td><td></td><td>63 cm</td><td>65 cm</td><td>67 cm</td><td>69 cm</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
+
+    <footer>
+        Copyright 2025 — BLÁIRE. All rights reserved.
+    </footer>
 
     <script type="importmap">
     {
@@ -178,11 +425,8 @@
         .then(() => {
             document.getElementById('loading').style.display = 'none';
 
-            // Fade in canvas
             const canvas = container.querySelector('canvas');
-            if (canvas) {
-                requestAnimationFrame(() => canvas.classList.add('visible'));
-            }
+            if (canvas) requestAnimationFrame(() => canvas.classList.add('visible'));
 
             const controls = viewer.controls;
             if (controls) {
@@ -193,28 +437,24 @@
                 controls.maxDistance = 8;
                 controls.enableDamping = true;
                 controls.dampingFactor = 0.08;
-
-                // Autorotation
                 controls.autoRotate = true;
                 controls.autoRotateSpeed = 1.5;
             }
 
             viewer.start();
 
-            // Show hint and fullscreen button after fade-in
             setTimeout(() => {
                 document.getElementById('hint').classList.add('visible');
                 document.getElementById('btn-fullscreen').classList.add('visible');
             }, 1500);
 
-            // Stop autorotation + hide hint on interaction
             container.addEventListener('pointerdown', () => {
                 if (controls) controls.autoRotate = false;
                 document.getElementById('hint').classList.remove('visible');
             }, { once: true });
         })
         .catch(err => {
-            document.getElementById('loading').textContent = 'Błąd: ' + err.message;
+            document.getElementById('loading').textContent = 'Error: ' + err.message;
             console.error(err);
         });
 
@@ -225,6 +465,16 @@
             } else {
                 document.exitFullscreen();
             }
+        });
+
+        // Tabs
+        document.querySelectorAll('.tabs button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-description').classList.toggle('hidden', btn.dataset.tab !== 'description');
+                document.getElementById('tab-sizechart').classList.toggle('hidden', btn.dataset.tab !== 'sizechart');
+            });
         });
     </script>
 </body>
